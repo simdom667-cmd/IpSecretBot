@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IpSecretBot | Advanced OSINT</title>
+    <style>
+        :root {
+            --bg-color: #07090e;
+            --card-bg: #0d1322;
+            --accent: #10b981;
+            --accent-hover: #059669;
+            --accent-glow: rgba(16, 185, 129, 0.25);
+            --text: #9ca3af;
+            --text-bright: #f3f4f6;
+            --border: #1e293b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 460px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 28px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        }
+
+        h2 {
+            color: var(--text-bright);
+            text-align: center;
+            margin-bottom: 6px;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text);
+            font-size: 12px;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-bright);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            background: #04060b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--accent);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent);
+            color: #000000;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            background: #34d399;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #111827;
+            color: var(--text-bright);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #1f2937;
+            box-shadow: none;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .loader-container {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .spinner {
+            width: 38px;
+            height: 38px;
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-title {
+            color: var(--text-bright);
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .timer {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 14px;
+        }
+
+        .terminal-box {
+            background: #04060b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            height: 110px;
+            overflow-y: hidden;
+            text-align: left;
+            font-size: 11px;
+            color: #34d399;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .link-box {
+            background: #04060b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 12px;
+            color: var(--accent);
+            word-break: break-all;
+            margin-bottom: 16px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .result-box {
+            background: #04060b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 13px;
+            color: #34d399;
+            line-height: 1.7;
+            margin-bottom: 16px;
+            word-break: break-all;
+        }
+
+        .footer-credit {
+            text-align: center;
+            font-size: 11px;
+            color: #4b5563;
+            margin-top: 18px;
+            letter-spacing: 1px;
+        }
+
+        .actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ЕКРАН 1: Головне меню вибору -->
+        <div id="screen-menu" class="screen active">
+            <h2>IpSecretBot</h2>
+            <p class="subtitle">Secure Intelligence Unit</p>
+            
+            <div class="menu-grid">
+                <button class="btn" onclick="selectMode('phone')">🔍 Пошук за номером</button>
+                <button class="btn btn-secondary" onclick="selectMode('link')">🔗 Генератор посилання</button>
+            </div>
+            
+            <div class="footer-credit">by:IpSecretbot</div>
+        </div>
+
+        <!-- ЕКРАН 2А: Введення номера телефону -->
+        <div id="screen-input-phone" class="screen">
+            <h2>Ввід даних</h2>
+            <p class="subtitle">Цільовий номер абонент</p>
+            
+            <div class="form-group">
+                <label for="phoneInput">Номер у міжнародному форматі</label>
+                <input type="text" id="phoneInput" placeholder="+380991234567">
+            </div>
+            
+            <button class="btn" onclick="startPhoneSearch()">Запустити сканування</button>
+            <button class="btn btn-secondary" onclick="showScreen('screen-menu')" style="margin-top: 10px;">Назад</button>
+        </div>
+
+        <!-- ЕКРАН 2Б: Генерація посилання (20 сек + 3 сек фіналу) -->
+        <div id="screen-gen-link" class="screen">
+            <div class="loader-container">
+                <div class="spinner"></div>
+                <div class="loading-title" id="genLoadingTitle">Генерація TikTok вектора...</div>
+                <div class="timer" id="genTimer">20</div>
+                <div class="terminal-box" id="genTerminalLogs">
+                    <div>> Initializing secure tunnel...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЕКРАН 3: Видача згенерованого посилання -->
+        <div id="screen-show-link" class="screen">
+            <h2>Вектор готовий</h2>
+            <p class="subtitle">Надішліть цілі для активації</p>
+            
+            <div class="link-box" id="generatedLinkText">https://...</div>
+            
+            <div class="actions-group">
+                <button class="btn" onclick="copyLink()">📋 Скопіювати посилання</button>
+                <button class="btn btn-secondary" onclick="startLinkDataProcess()">👀 Отримати дані (30 сек)</button>
+            </div>
+            <div class="footer-credit">by:IpSecretbot</div>
+        </div>
+
+        <!-- ЕКРАН 4: Очікування 30 секунд + 3 сек фіналу -->
+        <div id="screen-loading" class="screen">
+            <div class="loader-container">
+                <div class="spinner"></div>
+                <div class="loading-title" id="loadingMainTitle">Обробка запиту у базі...</div>
+                <div class="timer" id="mainTimer">30</div>
+                <div class="terminal-box" id="mainTerminalLogs">
+                    <div>> Connecting to node cluster...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЕКРАН 5: Фінальний звіт -->
+        <div id="screen-result" class="screen">
+            <h2>Звіт успішно зібрано</h2>
+            <p class="subtitle" style="margin-bottom: 14px;">Дані зафіксовані у блокчейні</p>
+            
+            <div class="result-box" id="resultDataText"></div>
+
+            <button class="btn btn-secondary" onclick="resetApp()">Скинути та почати знову</button>
+            <div class="footer-credit">by:IpSecretbot</div>
+        </div>
+    </div>
+
+    <script>
+        const tiktokLinks = [
+            "https://www.tiktok.com/@natural_alberto/video/7680521237986168085?is_from_webapp=1&sender_device=pc",
+            "https://www.tiktok.com/@dravex.x/video/7678821985165561106?is_from_webapp=1&sender_device=pc",
+            "https://www.tiktok.com/@_.lunarxxd._/video/7680361046019706132?is_from_webapp=1&sender_device=pc",
+            "https://www.tiktok.com/@alfavod33/video/7678024971079175432?is_from_webapp=1&sender_device=pc",
+            "https://www.tiktok.com/@what.is.this877/video/7669420333086018846?is_from_webapp=1&sender_device=pc",
+            "https://www.tiktok.com/@b2968332gjk/video/7674454004562218260?is_from_webapp=1&sender_device=pc",
+            "https://www.tiktok.com/@zakulisye.tiktoka/video/7679420450396441878?is_from_webapp=1&sender_device=pc"
+        ];
+
+        const countryCodes = [
+            { code: "+1", name: "USA / CANADA ID" },
+            { code: "+7", name: "RUSSIA / KAZAKHSTAN ID" },
+            { code: "+44", name: "UK ID" },
+            { code: "+380", name: "UKRAINE ID" },
+            { code: "+49", name: "GERMANY ID" },
+            { code: "+33", name: "FRANCE ID" },
+            { code: "+81", name: "JAPAN ID" },
+            { code: "+86", name: "CHINA ID" },
+            { code: "+91", name: "INDIA ID" },
+            { code: "+55", name: "BRAZIL ID" },
+            { code: "+52", name: "MEXICO ID" },
+            { code: "+39", name: "ITALY ID" },
+            { code: "+34", name: "SPAIN ID" },
+            { code: "+61", name: "AUSTRALIA ID" },
+            { code: "+82", name: "SOUTH KOREA ID" },
+            { code: "+31", name: "NETHERLANDS ID" },
+            { code: "+46", name: "SWEDEN ID" },
+            { code: "+41", name: "SWITZERLAND ID" },
+            { code: "+48", name: "POLAND ID" },
+            { code: "+90", name: "TURKEY ID" },
+            { code: "+966", name: "SAUDI ARABIA ID" },
+            { code: "+20", name: "EGYPT ID" },
+            { code: "+27", name: "SOUTH AFRICA ID" },
+            { code: "+92", name: "PAKISTAN ID" },
+            { code: "+880", name: "BANGLADESH ID" },
+            { code: "+62", name: "INDONESIA ID" },
+            { code: "+63", name: "PHILIPPINES ID" },
+            { code: "+84", name: "VIETNAM ID" },
+            { code: "+66", name: "THAILAND ID" },
+            { code: "+60", name: "MALAYSIA ID" }
+        ];
+
+        let currentActiveMode = '';
+        let currentSelectedTikTok = '';
+
+        const terminalLogBank = [
+            "Bypassing firewall constraints...",
+            "Resolving target DNS node...",
+            "Intercepting session tokens...",
+            "Extracting telemetry package...",
+            "Decrypting SSL certificate layer...",
+            "Pinging remote proxy gateway...",
+            "Allocating memory buffers...",
+            "Synchronizing regional database...",
+            "Validating checksum hashes...",
+            "Accessing deep archive..."
+        ];
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function selectMode(mode) {
+            currentActiveMode = mode;
+            if (mode === 'phone') {
+                document.getElementById('phoneInput').value = '+';
+                showScreen('screen-input-phone');
+            } else {
+                startLinkGenerationPhase();
+            }
+        }
+
+        // Генерація посилання: 20 сек + 3 сек фіналу
+        function startLinkGenerationPhase() {
+            showScreen('screen-gen-link');
+            let timeLeft = 20;
+            const timerEl = document.getElementById('genTimer');
+            const terminalEl = document.getElementById('genTerminalLogs');
+            const titleEl = document.getElementById('genLoadingTitle');
+            
+            timerEl.textContent = timeLeft;
+            titleEl.textContent = "Генерація TikTok вектора...";
+            terminalEl.innerHTML = "<div>> Allocating TikTok API token...</div>";
+
+            let logCounter = 0;
+            const interval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    timerEl.textContent = timeLeft;
+                    if (timeLeft % 3 === 0 && logCounter < terminalLogBank.length) {
+                        terminalEl.innerHTML += `<div>> ${terminalLogBank[logCounter++]}</div>`;
+                        terminalEl.scrollTop = terminalEl.scrollHeight;
+                    }
+                } else {
+                    // Таймер дійшов до 0, запускаємо додаткові 3 секунди фіналу
+                    clearInterval(interval);
+                    timerEl.textContent = "0";
+                    titleEl.textContent = "Фіналізація потоку...";
+                    terminalEl.innerHTML += "<div>> Finalizing data stream...</div>";
+                    terminalEl.innerHTML += "<div>> Decryption complete...</div>";
+                    terminalEl.scrollTop = terminalEl.scrollHeight;
+
+                    setTimeout(() => {
+                        currentSelectedTikTok = tiktokLinks[Math.floor(Math.random() * tiktokLinks.length)];
+                        document.getElementById('generatedLinkText').innerText = currentSelectedTikTok;
+                        showScreen('screen-show-link');
+                    }, 3000); // 3 секунди додаткового очікування
+                }
+            }, 1000);
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(currentSelectedTikTok).then(() => {
+                alert('Посилання успішно скопійовано!');
+            }).catch(() => {
+                alert('Не вдалося скопіювати автоматично.');
+            });
+        }
+
+        function startLinkDataProcess() {
+            showScreen('screen-loading');
+            document.getElementById('loadingMainTitle').innerText = "Збір даних посилання...";
+            runTerminalTimer(30, () => {
+                buildFinalReport('link', '');
+                showScreen('screen-result');
+            });
+        }
+
+        function startPhoneSearch() {
+            const val = document.getElementById('phoneInput').value.trim();
+            if (!val || val.length < 5 || !val.startsWith('+')) {
+                alert('Введіть номер у міжнародному форматі (з плюсом)!');
+                return;
+            }
+
+            showScreen('screen-loading');
+            document.getElementById('loadingMainTitle').innerText = "Аналіз телефонного номера...";
+            runTerminalTimer(30, () => {
+                buildFinalReport('phone', val);
+                showScreen('screen-result');
+            });
+        }
+
+        // Основний таймер (30 сек + 3 сек додаткових)
+        function runTerminalTimer(seconds, callback) {
+            let timeLeft = seconds;
+            const timerEl = document.getElementById('mainTimer');
+            const terminalEl = document.getElementById('mainTerminalLogs');
+            const titleEl = document.getElementById('loadingMainTitle');
+            
+            timerEl.textContent = timeLeft;
+            terminalEl.innerHTML = "<div>> Establishing secure socket...</div>";
+
+            let logIndex = 0;
+            const interval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft > 0) {
+                    timerEl.textContent = timeLeft;
+                    if (timeLeft % 3 === 0) {
+                        const randomMsg = terminalLogBank[Math.floor(Math.random() * terminalLogBank.length)];
+                        terminalEl.innerHTML += `<div>> ${randomMsg}</div>`;
+                        terminalEl.scrollTop = terminalEl.scrollHeight;
+                    }
+                } else {
+                    // Таймер на нулю, додаткові 3 секунди крутіння
+                    clearInterval(interval);
+                    timerEl.textContent = "0";
+                    titleEl.textContent = "Фінальна обробка пакетів...";
+                    terminalEl.innerHTML += "<div>> Finalizing data stream...</div>";
+                    terminalEl.innerHTML += "<div>> Rendering report package...</div>";
+                    terminalEl.scrollTop = terminalEl.scrollHeight;
+
+                    setTimeout(() => {
+                        callback();
+                    }, 3000); // 3 секунди затримки перед переходом на звіт
+                }
+            }, 1000);
+        }
+
+        function generateRandomIP() {
+            return `${Math.floor(Math.random()*190+10)}.${Math.floor(Math.random()*254+1)}.${Math.floor(Math.random()*254+1)}.${Math.floor(Math.random()*254+1)}`;
+        }
+        function generateRandomCoord() {
+            return `${(Math.random()*180).toFixed(4)}.${Math.floor(Math.random()*10000)}`;
+        }
+        function generateRandomID(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function buildFinalReport(type, phoneValue) {
+            const ip = generateRandomIP();
+            const w = generateRandomCoord();
+            const n = generateRandomCoord();
+            const intendicalId = generateRandomID(100000000, 999999999);
+            const secretIdSword = generateRandomID(1000000000000, 9999999999999);
+
+            let reportHtml = `
+                Ip ${ip}<br>
+                W ${w}<br>
+                N ${n}<br><br>
+                Intendical ID ${intendicalId}<br>
+            `;
+
+            if (type === 'phone') {
+                let foundCountryLine = "UKRAINE ID " + generateRandomID(10000, 99999);
+                for (let item of countryCodes) {
+                    if (phoneValue.startsWith(item.code)) {
+                        foundCountryLine = `${item.name} ${generateRandomID(10000, 99999)}`;
+                        break;
+                    }
+                }
+                reportHtml += `${foundCountryLine}<br><br>`;
+            } else {
+                reportHtml += `<br>`;
+            }
+
+            reportHtml += `Secret ID sword for baza ${secretIdSword}`;
+
+            document.getElementById('resultDataText').innerHTML = reportHtml;
+        }
+
+        function resetApp() {
+            currentActiveMode = '';
+            currentSelectedTikTok = '';
+            document.getElementById('phoneInput').value = '+';
+            showScreen('screen-menu');
+        }
+    </script>
+</body>
+</html>
